@@ -2,18 +2,29 @@ const fs = require('fs');
 const {performance} = require('perf_hooks');
 
 let data = "";
+
+let perfCleanBag = 0;
+let perfCalcSum = 0;
+let perfGetMaxFromBag = 0;
+let perfAddToBag = 0;
+
+
 fs.readFile('./Exercice-5/sample-5/input3.txt', 'utf8', (error, r) => {
     if (error) {
         console.error(error);
         return;
     }
     data = r;
-    const t0 = performance.now();
-    for (let i = 0; i < 10; i++) {
+    let start = performance.now();
+    for (let i = 0; i < 1; i++) {
         main();
     }
-    const t1 = performance.now();
-    console.log(`Call to doSomething took ${(t1 - t0).toFixed(2)} milliseconds.`);
+    let end = performance.now();
+    console.log(`Call to main() took ${(end - start).toFixed(2)} milliseconds.`);
+    console.log(`Call to cleanBag() took ${(perfCleanBag).toFixed(2)} milliseconds.`);
+    console.log(`Call to calcSum() took ${(perfCalcSum).toFixed(2)} milliseconds.`);
+    console.log(`Call to getMaxFromBag() took ${(perfGetMaxFromBag).toFixed(2)} milliseconds.`);
+    console.log(`Call to addToBag() took ${(perfAddToBag).toFixed(2)} milliseconds.`);
 });
 
 function main() {
@@ -22,23 +33,46 @@ function main() {
     let C = parseInt(data.split('\n')[0].split(' ')[2]);
     let AC = A + C;
     let line = data.split('\n')[1].split(' ').map(e => parseInt(e));
+    let len = line.length;
     line.push(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
     let totalSum = line.reduce((a, b) => a + b);
 
     let bag = initBag();
+    let sum = calcSum(line, A, 0);
 
     // Second Algo
     for (let i = 0; i < N; i++) {
+
         let t0 = performance.now();
         bag = cleanBag(bag, i);
         let t1 = performance.now();
-        let nb = calcSum(line, A, i) + getMaxFromBag(bag, i);
+        perfCleanBag += (t1 - t0);
+
+        t0 = performance.now();
+
+        if (i > 0 && (i + A - 1) < len) {
+            sum = adjustSum(sum, line[i-1], line[i+A-1]);
+        } else if (i > 0 && (i + A - 1) > len) {
+            sum = adjustSum(sum, line[i-1], 0);
+        }
+        t1 = performance.now();
+        perfCalcSum += (t1 - t0);
+
+        t0 = performance.now();
+        nb = sum + getMaxFromBag(bag, i);
+        t1 = performance.now();
+        perfGetMaxFromBag += (t1 - t0);
+
+        t0 = performance.now();
         bag = addToBag(bag, nb, i + AC - 1);
+        t1 = performance.now();
+        perfAddToBag += (t1 - t0);
+
     }
 
     let result = totalSum - getMaxFromBag(bag, N + AC);
 
-    // console.log(result);
+    console.log(result);
 
     // First Algo
     // let protectSum = 0;
@@ -154,6 +188,10 @@ function calcSum(line, A, currentIndex) {
     return sum;
 }
 
+function adjustSum(sum, output, input) {
+    sum = sum + input - output;
+    return sum;
+}
 
 // /*******
 //  * Read input from STDIN
